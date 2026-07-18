@@ -32,3 +32,4 @@ coverage/
 shot-*.png
 *.out.log
 *.err.log
+.vercel

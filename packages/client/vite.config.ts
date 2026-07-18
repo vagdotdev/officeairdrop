@@ -7,7 +7,9 @@ import { fileURLToPath, URL } from 'node:url';
 // signaling server directly via VITE_SIGNALING_URL.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  envDir: fileURLToPath(new URL('../..', import.meta.url)),
+  // Load package-local .env* (e.g. .env.production) so Vercel builds pick up
+  // VITE_SIGNALING_URL without depending on dashboard env wiring.
+  envDir: fileURLToPath(new URL('.', import.meta.url)),
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
