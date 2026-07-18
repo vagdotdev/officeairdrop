@@ -68,10 +68,13 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<BuiltApp>
     service: 'drop-signaling',
     status: 'ok',
     note: 'Drop signaling API. The app runs on the client (default http://localhost:5173).',
-    endpoints: ['/health', '/ice', '/ws'],
+    endpoints: ['/health', '/lobby', '/ice', '/ws'],
   }));
 
   app.get('/health', async () => ({ status: 'ok', uptime: process.uptime() }));
+
+  // Who’s currently in the office lobby (for the subtle pre-join atmosphere).
+  app.get('/lobby', async () => ({ peers: await hub.getLobbySnapshot() }));
 
   // The encryption key never reaches here — clients fetch ICE config only.
   app.get('/ice', async () => buildIceConfig());

@@ -17,6 +17,8 @@ import { NameGate } from '@/components/drop/NameGate';
 import { PeerOrb } from '@/components/drop/PeerOrb';
 import { IncomingOffer } from '@/components/drop/IncomingOffer';
 import { DropProgress } from '@/components/drop/DropProgress';
+import { SaveFileButton } from '@/components/drop/SaveFileButton';
+import { LobbyAtmosphere } from '@/components/drop/LobbyAtmosphere';
 import { useOfficeLobby } from '@/hooks/useOfficeLobby';
 import { SenderSession } from '@/lib/session/senderSession';
 import { ReceiverSession } from '@/lib/session/receiverSession';
@@ -218,12 +220,15 @@ export function DropPage() {
 
       <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-5 pb-16 pt-6 sm:px-8 sm:pt-10">
         {phase === 'gate' && (
-          <div className="flex min-h-[70dvh] items-center justify-center">
-            <NameGate
-              initialName={loadDisplayName()}
-              busy={lobby.status === 'connecting'}
-              onJoin={onJoin}
-            />
+          <div className="relative flex min-h-[70dvh] items-center justify-center">
+            <LobbyAtmosphere />
+            <div className="relative z-10 w-full">
+              <NameGate
+                initialName={loadDisplayName()}
+                busy={lobby.status === 'connecting'}
+                onJoin={onJoin}
+              />
+            </div>
           </div>
         )}
 
@@ -403,23 +408,13 @@ export function DropPage() {
                       <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
                         {phase === 'complete-send'
                           ? 'Your files landed peer-to-peer.'
-                          : 'Save the files to your machine.'}
+                          : 'Tap Save File below to keep them on this device.'}
                       </p>
 
                       {phase === 'complete-receive' && (
-                        <div className="mx-auto mt-5 max-w-md space-y-2">
+                        <div className="mx-auto mt-6 max-w-md space-y-3">
                           {completed.map((f) => (
-                            <button
-                              key={f.name + f.size}
-                              type="button"
-                              onClick={() => void f.save()}
-                              className="flex w-full items-center justify-between rounded-2xl bg-white/70 px-4 py-3 text-left text-sm font-semibold transition hover:bg-white"
-                            >
-                              <span className="truncate">{f.name}</span>
-                              <span className="text-[var(--color-ink-faint)]">
-                                {formatBytes(f.size)}
-                              </span>
-                            </button>
+                            <SaveFileButton key={f.name + f.size} file={f} />
                           ))}
                         </div>
                       )}

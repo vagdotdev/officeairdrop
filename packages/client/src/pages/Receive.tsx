@@ -88,7 +88,7 @@ export function ReceivePage() {
                         <span className="flex-1 truncate text-sm text-[var(--color-ink)]">{f.name}</span>
                         <span className="text-xs text-[var(--color-ink-faint)]">{formatBytes(f.size)}</span>
                         <Button size="sm" onClick={() => void f.save()}>
-                          <Download className="h-4 w-4" /> Save
+                          <Download className="h-4 w-4" /> Save File
                         </Button>
                       </li>
                     ))}

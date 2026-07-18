@@ -231,11 +231,16 @@ export class SignalingHub {
     });
   }
 
+  /** Public snapshot for the pre-join “who’s already here” atmosphere. */
+  async getLobbySnapshot(): Promise<LobbyPeer[]> {
+    return this.listLobbyPeers('');
+  }
+
   private async listLobbyPeers(excludePeerId: string): Promise<LobbyPeer[]> {
     const ids = await this.publisher.smembers(LOBBY_SET_KEY);
     const peers: LobbyPeer[] = [];
     for (const id of ids) {
-      if (id === excludePeerId) continue;
+      if (excludePeerId && id === excludePeerId) continue;
       const raw = await this.publisher.get(peerKey(id));
       if (!raw) {
         await this.publisher.srem(LOBBY_SET_KEY, id);
