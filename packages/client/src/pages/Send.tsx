@@ -13,6 +13,8 @@ import { SecurityNote } from '@/components/SecurityNote';
 import { StatusStepper } from '@/components/StatusStepper';
 import { useSenderSession } from '@/hooks/useSenderSession';
 import { formatBytes } from '@/lib/utils';
+import { packFilesForSend } from '@/lib/packFiles';
+import { loadDisplayName } from '@/lib/device';
 
 const STEPS = ['Preparing', 'Waiting', 'Connected', 'Sending', 'Complete'];
 const STEP_INDEX: Record<string, number> = {
@@ -26,12 +28,25 @@ const STEP_INDEX: Record<string, number> = {
 
 export function SendPage() {
   const [files, setFiles] = useState<File[]>([]);
+  const [packing, setPacking] = useState(false);
   const sender = useSenderSession();
   const started = sender.room !== null || sender.state !== 'idle';
 
   const addFiles = (incoming: File[]) =>
     setFiles((prev) => [...prev, ...incoming]);
   const removeFile = (i: number) => setFiles((prev) => prev.filter((_, idx) => idx !== i));
+
+  const start = async () => {
+    if (files.length === 0 || packing) return;
+    setPacking(true);
+    try {
+      const payload = await packFilesForSend(files, loadDisplayName() || 'Someone');
+      sender.start(payload);
+    } catch (e) {
+      console.error(e);
+      setPacking(false);
+    }
+  };
 
   return (
     <PageShell narrow>
@@ -41,6 +56,9 @@ export function SendPage() {
           <h1 className="font-display text-[2.4rem] leading-tight tracking-tight">Send files</h1>
           <p className="text-[0.95rem] leading-relaxed text-[var(--color-ink-soft)]">
             Encrypted in your browser, sent directly to the receiver. Nothing is uploaded.
+            {files.length > 1
+              ? ' Multiple files are packed into one folder zip first.'
+              : ''}
           </p>
         </header>
 
@@ -51,9 +69,14 @@ export function SendPage() {
               <Card>
                 <CardContent className="space-y-5">
                   <FileList files={files} onRemove={removeFile} />
-                  <Button size="lg" className="w-full" onClick={() => sender.start(files)}>
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    disabled={packing}
+                    onClick={() => void start()}
+                  >
                     <ShieldCheck className="h-4 w-4" />
-                    Encrypt &amp; create share link
+                    {packing ? 'Packing…' : 'Encrypt & create share link'}
                   </Button>
                 </CardContent>
               </Card>

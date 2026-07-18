@@ -26,6 +26,7 @@ import { SIGNALING_URL } from '@/config/env';
 import { loadDisplayName, saveDisplayName } from '@/lib/device';
 import { accentGradient, initials } from '@/lib/accents';
 import { formatBytes } from '@/lib/utils';
+import { packFilesForSend } from '@/lib/packFiles';
 import type { CompletedFile, TransferProgress } from '@/lib/transfer';
 
 type Phase =
@@ -79,9 +80,12 @@ export function DropPage() {
 
   const startSend = async (peer: LobbyPeer) => {
     if (!lobby.signaling || files.length === 0) return;
+    const senderName = lobby.self?.displayName || loadDisplayName() || 'Someone';
     setSelected(peer);
     setPhase('sending');
-    setStatusText(`Waiting for ${peer.displayName} to accept…`);
+    setStatusText(
+      files.length > 1 ? 'Packing into one folder…' : `Waiting for ${peer.displayName} to accept…`,
+    );
     setError(null);
     setProgress(null);
 
@@ -106,7 +110,11 @@ export function DropPage() {
     });
 
     try {
-      await session.startToPeer(files, {
+      const payload = await packFilesForSend(files, senderName);
+      if (payload.length === 1 && files.length > 1) {
+        setStatusText(`Waiting for ${peer.displayName} to accept…`);
+      }
+      await session.startToPeer(payload, {
         signaling: lobby.signaling,
         toPeerId: peer.peerId,
         ownsSignaling: false,
@@ -286,7 +294,9 @@ export function DropPage() {
                         <div className="mt-1 text-sm text-[var(--color-ink-soft)]">
                           {files.length === 0
                             ? 'Drag & drop anywhere here, or browse.'
-                            : formatBytes(totalBytes)}
+                            : files.length > 1
+                              ? `${formatBytes(totalBytes)} · will send as one “Files by …” folder`
+                              : formatBytes(totalBytes)}
                         </div>
                       </div>
                       <button
@@ -403,18 +413,26 @@ export function DropPage() {
                         )}
                       </div>
                       <div className="font-display text-2xl font-semibold tracking-tight">
-                        {phase === 'complete-send' ? 'Delivered' : 'Received'}
+                        {phase === 'complete-send' ? 'Delivered' : 'Ready to download'}
                       </div>
                       <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
                         {phase === 'complete-send'
-                          ? 'Your files landed peer-to-peer.'
-                          : 'Tap Save File below to keep them on this device.'}
+                          ? 'Your drop landed peer-to-peer.'
+                          : 'One download — everything is in there.'}
                       </p>
 
-                      {phase === 'complete-receive' && (
+                      {phase === 'complete-receive' && completed.length > 0 && (
                         <div className="mx-auto mt-6 max-w-md space-y-3">
                           {completed.map((f) => (
-                            <SaveFileButton key={f.name + f.size} file={f} />
+                            <SaveFileButton
+                              key={f.name + f.size}
+                              file={f}
+                              hint={
+                                f.name.toLowerCase().endsWith('.zip')
+                                  ? 'Unzip to open the folder'
+                                  : undefined
+                              }
+                            />
                           ))}
                         </div>
                       )}
@@ -425,9 +443,13 @@ export function DropPage() {
                           setFiles([]);
                           resetTransfer();
                         }}
-                        className="mt-6 rounded-full bg-[#12131a] px-6 py-2.5 text-sm font-semibold text-white"
+                        className={`mt-6 rounded-full px-6 py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
+                          phase === 'complete-receive'
+                            ? 'bg-white/70 text-[var(--color-ink)] hover:bg-white'
+                            : 'bg-[#12131a] text-white'
+                        }`}
                       >
-                        Send another
+                        {phase === 'complete-receive' ? 'Done' : 'Back to lobby'}
                       </button>
                     </div>
                   )}
