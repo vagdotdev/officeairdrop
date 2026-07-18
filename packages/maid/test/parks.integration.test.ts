@@ -25,9 +25,9 @@ function hash(bytes: Uint8Array): string {
 }
 
 function merkle(hashes: string[]): string {
-  let level = hashes.map((value) => Buffer.from(value, 'base64url'));
+  let level: Uint8Array[] = hashes.map((value) => Buffer.from(value, 'base64url'));
   while (level.length > 1) {
-    const next: Buffer[] = [];
+    const next: Uint8Array[] = [];
     for (let i = 0; i < level.length; i += 2) {
       next.push(
         createHash('sha256')
@@ -37,7 +37,7 @@ function merkle(hashes: string[]): string {
     }
     level = next;
   }
-  return level[0]!.toString('base64url');
+  return Buffer.from(level[0]!).toString('base64url');
 }
 
 async function setup(): Promise<BuiltMaid> {

@@ -5,6 +5,11 @@
   "type": "module",
   "description": "Blind encrypted temporary storage service for Drop.",
   "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./app": "./src/app.ts",
+    "./config": "./src/config.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json --noEmit",

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  CloudArrowUp,
   DownloadSimple,
   LinkSimple,
   MagnifyingGlass,
@@ -454,13 +455,20 @@ export function DropPage() {
                     </div>
                   )}
 
-                  <div className="flex justify-center">
+                  <div className="flex flex-wrap justify-center gap-5">
                     <Link
                       to="/send"
                       className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink)]"
                     >
                       <LinkSimple weight="bold" className="h-4 w-4" />
                       Or send with a share link
+                    </Link>
+                    <Link
+                      to="/park"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink)]"
+                    >
+                      <CloudArrowUp weight="bold" className="h-4 w-4" />
+                      Park encrypted files for later
                     </Link>
                   </div>
                 </motion.div>

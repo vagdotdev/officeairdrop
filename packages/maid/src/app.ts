@@ -60,8 +60,10 @@ export async function buildMaid(options: BuildMaidOptions = {}): Promise<BuiltMa
       void reply.status(error.statusCode).send({ error: error.message });
       return;
     }
-    if ('statusCode' in error && typeof error.statusCode === 'number') {
-      void reply.status(error.statusCode).send({ error: error.message });
+    const statusCode = (error as { statusCode?: unknown }).statusCode;
+    if (typeof statusCode === 'number') {
+      const message = error instanceof Error ? error.message : 'request failed';
+      void reply.status(statusCode).send({ error: message });
       return;
     }
     app.log.error(error);
