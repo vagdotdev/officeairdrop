@@ -47,17 +47,47 @@ export class DataChannelTransport implements Transport {
   /**
    * Resolve once the channel can accept more data (buffer drained below the
    * low-water mark). If we're already below it, resolve immediately.
+   *
+   * Important: `bufferedamountlow` can fire between the threshold check and
+   * `addEventListener`, which used to leave senders hung forever mid-transfer
+   * (often around tens of MB in). Re-check after subscribe + poll as a safety net.
    */
   whenWritable(): Promise<void> {
-    if (this.channel.bufferedAmount <= this.channel.bufferedAmountLowThreshold) {
-      return Promise.resolve();
-    }
+    if (this.isWritable()) return Promise.resolve();
+
     return new Promise((resolve) => {
-      const handler = () => {
-        this.channel.removeEventListener('bufferedamountlow', handler);
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        this.channel.removeEventListener('bufferedamountlow', onLow);
+        window.clearInterval(poll);
         resolve();
       };
-      this.channel.addEventListener('bufferedamountlow', handler);
+
+      const onLow = () => {
+        if (this.isWritable()) finish();
+      };
+
+      this.channel.addEventListener('bufferedamountlow', onLow);
+
+      // Race fix: buffer may have already drained before the listener attached.
+      if (this.isWritable()) {
+        finish();
+        return;
+      }
+
+      // Safety net — some browsers are flaky about bufferedamountlow under load.
+      const poll = window.setInterval(() => {
+        if (this.channel.readyState !== 'open' || this.isWritable()) finish();
+      }, 50);
     });
+  }
+
+  private isWritable(): boolean {
+    return (
+      this.channel.readyState !== 'open' ||
+      this.channel.bufferedAmount <= this.channel.bufferedAmountLowThreshold
+    );
   }
 }
