@@ -4,6 +4,7 @@
   "private": true,
   "description": "Office AirDrop — encrypted peer-to-peer file transfer across Mac, Windows, and Linux.",
   "type": "module",
+  "packageManager": "pnpm@9.15.0",
   "engines": {
     "node": ">=22"
   },

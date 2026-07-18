@@ -9,6 +9,8 @@ primary_region = "sin"
   HOST = "0.0.0.0"
   PORT = "8787"
   NODE_ENV = "production"
+  REDIS_URL = "memory"
+  CORS_ORIGINS = "https://officeairdrop.vercel.app,http://localhost:5173"
 
 [http_service]
   internal_port = 8787

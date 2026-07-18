@@ -13,6 +13,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 import { Redis } from 'ioredis';
+import RedisMock from 'ioredis-mock';
 import { config } from './config.js';
 import { buildIceConfig } from './ice/iceConfig.js';
 import { SignalingHub } from './ws/signaling.js';
@@ -28,6 +29,14 @@ export interface BuildAppOptions {
   redis?: Redis;
 }
 
+function createRedis(): Redis {
+  // Single-instance deploys can skip a real Redis with REDIS_URL=memory.
+  if (config.redisUrl === 'memory' || config.redisUrl === 'memory://') {
+    return new RedisMock() as unknown as Redis;
+  }
+  return new Redis(config.redisUrl, { lazyConnect: false });
+}
+
 export async function buildApp(options: BuildAppOptions = {}): Promise<BuiltApp> {
   const app = Fastify({
     logger: {
@@ -40,8 +49,11 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<BuiltApp>
   });
 
   // Redis publisher (the hub duplicates this for its subscriber connection).
-  const redis = options.redis ?? new Redis(config.redisUrl, { lazyConnect: false });
+  const redis = options.redis ?? createRedis();
   redis.on('error', (err) => app.log.error(err, 'redis error'));
+  if (config.redisUrl === 'memory' || config.redisUrl === 'memory://') {
+    app.log.info('using in-memory redis (single-instance mode)');
+  }
 
   const hub = new SignalingHub(redis, config.roomTtlSeconds, app.log);
 
