@@ -54,6 +54,9 @@ importers:
         specifier: ^2.6.0
         version: 2.6.1
     devDependencies:
+      '@beam/maid':
+        specifier: workspace:^
+        version: link:../maid
       '@tailwindcss/vite':
         specifier: ^4.0.0
         version: 4.3.1(vite@6.4.3(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))
@@ -84,6 +87,31 @@ importers:
       vite:
         specifier: ^6.0.7
         version: 6.4.3(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.21)(lightningcss@1.32.0)
+
+  packages/maid:
+    dependencies:
+      '@beam/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@fastify/cors':
+        specifier: ^10.0.1
+        version: 10.1.0
+      fastify:
+        specifier: ^5.2.0
+        version: 5.8.5
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.19.21
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.21)(lightningcss@1.32.0)

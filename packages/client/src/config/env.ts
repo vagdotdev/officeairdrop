@@ -5,3 +5,7 @@
 /** Base URL of the signaling server (http/https; upgraded to ws/wss internally). */
 export const SIGNALING_URL: string =
   import.meta.env.VITE_SIGNALING_URL ?? 'http://localhost:8787';
+
+/** Base URL of the optional blind encrypted maid service. */
+export const MAID_URL: string =
+  import.meta.env.VITE_MAID_URL ?? 'http://localhost:8788';

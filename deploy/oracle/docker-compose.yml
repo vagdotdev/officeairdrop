@@ -1,0 +1,52 @@
+services:
+  maid:
+    build:
+      context: ../..
+      dockerfile: packages/maid/Dockerfile
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      MAID_BIND_HOST: 0.0.0.0
+      MAID_PORT: 8788
+      MAID_DATA_DIR: /data
+    volumes:
+      - /srv/maid:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8788/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  caddy:
+    image: caddy:2
+    environment:
+      MAID_HOST: ${MAID_HOST}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    depends_on:
+      maid:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  caddy_data:
+  caddy_config:

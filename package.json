@@ -12,7 +12,8 @@
     "dev": "pnpm --parallel --filter @beam/server --filter @beam/client dev",
     "dev:server": "pnpm --filter @beam/server dev",
     "dev:client": "pnpm --filter @beam/client dev",
-    "build": "pnpm --filter @beam/shared build && pnpm --filter @beam/server build && pnpm --filter @beam/client build",
+    "dev:maid": "pnpm --filter @beam/maid dev",
+    "build": "pnpm --filter @beam/shared build && pnpm --filter @beam/server build && pnpm --filter @beam/maid build && pnpm --filter @beam/client build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint"
