@@ -4,6 +4,14 @@
 
 For the full story — problem, feel, how it works, what it is not — read [WHAT-THIS-IS.md](./WHAT-THIS-IS.md).
 
+## Live
+
+| | URL |
+|---|---|
+| **App** | https://officeairdrop.vercel.app |
+| **Signaling API** | https://officeairdrop-api-production.up.railway.app |
+| **GitHub** | https://github.com/vagdotdev/officeairdrop |
+
 Built on the [Beam](https://github.com/Kroszborg/beam) peer-to-peer pipeline:
 files are encrypted in the browser, streamed over a WebRTC DataChannel, and
 never uploaded to a server. The backend only brokers presence + WebRTC signaling.
