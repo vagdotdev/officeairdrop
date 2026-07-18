@@ -49,45 +49,45 @@ export class DataChannelTransport implements Transport {
    * low-water mark). If we're already below it, resolve immediately.
    *
    * Important: `bufferedamountlow` can fire between the threshold check and
-   * `addEventListener`, which used to leave senders hung forever mid-transfer
-   * (often around tens of MB in). Re-check after subscribe + poll as a safety net.
+   * `addEventListener`, which used to leave senders hung forever mid-transfer.
+   * Re-check after subscribe + poll as a safety net so this can never deadlock.
    */
   whenWritable(): Promise<void> {
-    if (this.isWritable()) return Promise.resolve();
+    if (this.isBelowThreshold()) return Promise.resolve();
+    if (this.channel.readyState !== 'open') return Promise.resolve();
 
     return new Promise((resolve) => {
       let settled = false;
+      let poll: ReturnType<typeof setInterval> | undefined;
+
       const finish = () => {
         if (settled) return;
         settled = true;
         this.channel.removeEventListener('bufferedamountlow', onLow);
-        window.clearInterval(poll);
+        if (poll !== undefined) clearInterval(poll);
         resolve();
       };
 
       const onLow = () => {
-        if (this.isWritable()) finish();
+        if (this.isBelowThreshold() || this.channel.readyState !== 'open') finish();
       };
 
       this.channel.addEventListener('bufferedamountlow', onLow);
 
       // Race fix: buffer may have already drained before the listener attached.
-      if (this.isWritable()) {
+      if (this.isBelowThreshold() || this.channel.readyState !== 'open') {
         finish();
         return;
       }
 
       // Safety net — some browsers are flaky about bufferedamountlow under load.
-      const poll = window.setInterval(() => {
-        if (this.channel.readyState !== 'open' || this.isWritable()) finish();
-      }, 50);
+      poll = setInterval(() => {
+        if (this.isBelowThreshold() || this.channel.readyState !== 'open') finish();
+      }, 40);
     });
   }
 
-  private isWritable(): boolean {
-    return (
-      this.channel.readyState !== 'open' ||
-      this.channel.bufferedAmount <= this.channel.bufferedAmountLowThreshold
-    );
+  private isBelowThreshold(): boolean {
+    return this.channel.bufferedAmount <= this.channel.bufferedAmountLowThreshold;
   }
 }

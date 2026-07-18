@@ -33,12 +33,16 @@ export interface FileSenderCallbacks {
   onError?: (message: string) => void;
 }
 
+const SEND_RETRIES = 50;
+
 export class FileSender {
   readonly transferId = nanoid();
   private readonly chunker: FileChunker;
   private manifest: ManifestMessage | null = null;
   private progress: ProgressTracker;
   private completed = false;
+  /** Serialize send loops so overlapping resume-requests can't interleave frames. */
+  private sendChain: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly files: File[],
@@ -99,6 +103,7 @@ export class FileSender {
     if (!this.manifest) throw new Error('call prepare() before run()');
     // Fresh cycle for each receiver that connects (incl. re-used links).
     this.completed = false;
+    this.sendChain = Promise.resolve();
     this.callbacks.onState?.('connected');
 
     transport.onMessage((data) => {
@@ -117,7 +122,13 @@ export class FileSender {
   ): Promise<void> {
     switch (msg.type) {
       case 'resume-request':
-        await this.sendChunks(transport, msg.missingChunks);
+        this.sendChain = this.sendChain
+          .then(() => this.sendChunks(transport, msg.missingChunks))
+          .catch((err: Error) => {
+            this.callbacks.onError?.(err.message || 'Send failed.');
+            this.callbacks.onState?.('error');
+          });
+        await this.sendChain;
         break;
       case 'transfer-complete':
         if (!this.completed) {
@@ -136,6 +147,7 @@ export class FileSender {
     transport: Transport,
     indices: number[],
   ): Promise<void> {
+    if (this.completed) return;
     this.callbacks.onState?.('sending');
 
     // Seed progress with what the receiver already has, so a resumed transfer's
@@ -146,20 +158,39 @@ export class FileSender {
     this.emitProgress();
 
     for (const index of indices) {
+      if (this.completed) return;
       if (transport.readyState !== 'open') return; // channel dropped → resume later
       const plaintext = await this.chunker.readChunk(index);
       const ciphertext = await encryptChunk(this.key, this.baseNonce, index, plaintext);
       const frames = frameChunk(index, ciphertext);
 
       for (const frame of frames) {
-        await transport.whenWritable(); // backpressure
-        if (transport.readyState !== 'open') return;
-        transport.send(frame);
+        const ok = await this.sendFrame(transport, frame);
+        if (!ok) return;
       }
 
       this.progress.recordChunk(plaintext.length);
       this.emitProgress();
     }
+  }
+
+  /**
+   * Pace on backpressure and retry if the browser rejects a send because the
+   * SCTP buffer is momentarily full (common on large transfers).
+   */
+  private async sendFrame(transport: Transport, frame: ArrayBuffer): Promise<boolean> {
+    for (let attempt = 0; attempt < SEND_RETRIES; attempt++) {
+      if (transport.readyState !== 'open') return false;
+      await transport.whenWritable();
+      if (transport.readyState !== 'open') return false;
+      try {
+        transport.send(frame);
+        return true;
+      } catch {
+        await sleep(20 + attempt * 15);
+      }
+    }
+    throw new Error('Could not send data — connection is congested. Please retry.');
   }
 
   /** Bytes the receiver already holds = sum of the chunks it isn't requesting. */
@@ -175,4 +206,8 @@ export class FileSender {
   private emitProgress(): void {
     this.callbacks.onProgress?.(this.progress.snapshot());
   }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

@@ -29,8 +29,9 @@ export const WIRE_FRAME_SIZE = 16 * 1024; // 16 KB
  * Backpressure threshold for the DataChannel's bufferedAmount. When the
  * outgoing buffer drains below this, we resume pumping frames. Keeps memory
  * bounded and avoids overrunning the SCTP send buffer.
+ * Kept intentionally modest so large office transfers stay paced under load.
  */
-export const BUFFERED_AMOUNT_LOW_THRESHOLD = 1 * 1024 * 1024; // 1 MB
+export const BUFFERED_AMOUNT_LOW_THRESHOLD = 512 * 1024; // 512 KB
 
 /** AES-GCM symmetric key length in bits. */
 export const AES_KEY_BITS = 256;

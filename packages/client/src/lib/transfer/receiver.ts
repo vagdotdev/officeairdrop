@@ -40,6 +40,11 @@ export class FileReceiver {
   private progress: ProgressTracker | null = null;
   private transport: Transport | null = null;
   private finished = false;
+  /**
+   * Serialize decrypt/IDB work. Firing unbounded parallel onFrame handlers used
+   * to choke the tab on big files, which then stalled the sender's SCTP window.
+   */
+  private frameChain: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly key: CryptoKey,
@@ -49,12 +54,17 @@ export class FileReceiver {
   /** Attach to a channel (called again with a new channel on reconnect). */
   attach(transport: Transport): void {
     this.transport = transport;
+    this.frameChain = Promise.resolve();
     this.callbacks.onState?.('connected');
     transport.onMessage((data) => {
       if (typeof data === 'string') {
         void this.onControl(JSON.parse(data) as ControlMessage);
       } else {
-        void this.onFrame(data);
+        this.frameChain = this.frameChain
+          .then(() => this.onFrame(data))
+          .catch((err: Error) => {
+            this.fail(err.message || 'Failed to process incoming data.');
+          });
       }
     });
     // If we already have the manifest (reconnect), immediately re-request gaps.
