@@ -1,0 +1,6 @@
+packages:
+  - 'packages/*'
+
+# pnpm 11+ reads build-script allow-listing from here (no longer package.json).
+onlyBuiltDependencies:
+  - esbuild

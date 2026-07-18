@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+.git
+.env
+.env.*
+!.env.example
+packages/client/dist
+**/coverage
+**/*.md
+.DS_Store
+shot-*.png

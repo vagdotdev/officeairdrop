@@ -1,0 +1,210 @@
+@import 'tailwindcss';
+
+/*
+ * DROP — office AirDrop. Vibrant macOS Sonoma energy:
+ * aurora wallpaper, frosted glass, soft orbs, springy motion.
+ * Display: Outfit. UI: Plus Jakarta Sans.
+ */
+@theme {
+  --font-display: 'Outfit', ui-sans-serif, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, Menlo, monospace;
+
+  --color-paper: #f4f7ff;
+  --color-paper-2: rgba(18, 19, 26, 0.06);
+  --color-panel: rgba(255, 255, 255, 0.62);
+  --color-ink: #12131a;
+  --color-ink-soft: #5b6178;
+  --color-ink-faint: #8b92a8;
+  --color-line: rgba(18, 19, 26, 0.08);
+  --color-mint: #34c759;
+  --color-danger: #ff3b30;
+  --color-signal: #007aff;
+
+  --radius-card: 28px;
+}
+
+:root {
+  --color-canvas: var(--color-paper);
+  --color-surface: var(--color-panel);
+  --color-border: var(--color-line);
+  --color-ink-muted: var(--color-ink-soft);
+  --color-accent: var(--color-signal);
+  --color-success: var(--color-mint);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background: #e8eefc;
+    overflow-x: hidden;
+  }
+
+  #root {
+    position: relative;
+    isolation: isolate;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  ::selection {
+    background: rgba(0, 122, 255, 0.18);
+  }
+}
+
+/* Living macOS aurora */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  background:
+    radial-gradient(1200px 700px at 12% 18%, rgba(255, 105, 180, 0.45), transparent 60%),
+    radial-gradient(900px 600px at 88% 22%, rgba(90, 200, 250, 0.5), transparent 55%),
+    radial-gradient(1000px 700px at 70% 88%, rgba(255, 214, 10, 0.35), transparent 55%),
+    radial-gradient(800px 500px at 20% 85%, rgba(191, 90, 242, 0.38), transparent 55%),
+    linear-gradient(160deg, #dce8ff 0%, #f7ecff 42%, #ffe8f1 100%);
+}
+
+.aurora::before,
+.aurora::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(40px);
+  will-change: transform;
+}
+
+.aurora::before {
+  width: 46vw;
+  height: 46vw;
+  left: -8%;
+  top: 10%;
+  background: rgba(255, 149, 0, 0.35);
+  animation: drift-a 18s var(--ease-soft) infinite alternate;
+}
+
+.aurora::after {
+  width: 42vw;
+  height: 42vw;
+  right: -6%;
+  bottom: 5%;
+  background: rgba(50, 215, 255, 0.32);
+  animation: drift-b 22s var(--ease-soft) infinite alternate;
+}
+
+@keyframes drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(8%, 12%, 0) scale(1.12);
+  }
+}
+
+@keyframes drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-10%, -8%, 0) scale(1.18);
+  }
+}
+
+.noise {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75) inset,
+    0 18px 50px rgba(40, 60, 120, 0.12);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(36px) saturate(1.5);
+  -webkit-backdrop-filter: blur(36px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 24px 60px rgba(40, 60, 120, 0.16);
+}
+
+.peer-ring {
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.75),
+    0 14px 30px rgba(40, 60, 120, 0.18);
+}
+
+.peer-ring:hover {
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.9),
+    0 0 0 8px rgba(0, 122, 255, 0.18),
+    0 18px 36px rgba(40, 60, 120, 0.22);
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.8s var(--ease-soft) infinite;
+}
+
+.eyebrow {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.link-ul {
+  text-underline-offset: 3px;
+}
+
+.link-ul:hover {
+  text-decoration: underline;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
