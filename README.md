@@ -36,6 +36,7 @@ Drop is the cross-platform version: open the site, see teammates, send files.
 - **E2E encrypted** WebRTC transfers (AES-256-GCM + Merkle integrity)
 - **Resumable** chunked transfers
 - **Share-link fallback** at `/send` and `/r/:roomId`
+- **Optional encrypted parking** at `/park` with a blind, self-hosted maid
 - Works in Chrome, Edge, Firefox, Safari on any OS
 
 ## Quick start
@@ -55,6 +56,14 @@ pnpm dev
 - App: http://localhost:5173
 - Signaling: http://localhost:8787
 
+To run the optional maid locally:
+
+```bash
+MAID_ACCESS_TOKEN="$(openssl rand -base64 32)" pnpm dev:maid
+```
+
+- Maid: http://localhost:8788
+
 Open the app in two browsers (or a normal window + an incognito window),
 join with different names, drop a file on one side, tap the other person.
 
@@ -65,6 +74,7 @@ packages/
   shared/   wire contracts (lobby + rooms + transfer protocol)
   server/   Fastify + WebSocket signaling, Redis presence
   client/   React + Vite + Tailwind AirDrop UI
+  maid/     blind encrypted temporary storage API
 ```
 
 ## Deploy notes
@@ -74,3 +84,4 @@ On the same LAN, WebRTC usually connects directly — very AirDrop-like.
 For restrictive NAT/VPN, set `TURN_URL` / `TURN_USERNAME` / `TURN_CREDENTIAL`.
 
 See `DEPLOY.md` for production tips (originally from Beam; same shape).
+See `deploy/oracle/README.md` for the Oracle Always Free maid.

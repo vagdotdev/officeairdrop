@@ -230,7 +230,18 @@ describe('transfer protocol (end-to-end, in-memory)', () => {
     const held: File[] = [];
     for (const f of parked!) {
       const bytes = await f.getBytes();
-      held.push(new File([bytes], f.name, { type: f.type }));
+      held.push(
+        new File(
+          [
+            bytes.buffer.slice(
+              bytes.byteOffset,
+              bytes.byteOffset + bytes.byteLength,
+            ) as ArrayBuffer,
+          ],
+          f.name,
+          { type: f.type },
+        ),
+      );
     }
 
     // ── Leg 2: maid → owner (return shipment) ──

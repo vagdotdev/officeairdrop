@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -86,6 +87,8 @@ describe('blind maid client round trip', () => {
     expect(recovered).toHaveLength(1);
     const got = await recovered[0]!.getBytes();
     const want = new Uint8Array(await original.arrayBuffer());
-    expect(got).toEqual(want);
+    expect(createHash('sha256').update(got).digest('hex')).toBe(
+      createHash('sha256').update(want).digest('hex'),
+    );
   });
 });

@@ -47,7 +47,10 @@ export class MaidClient {
           ...this.authorization(token),
           'Content-Type': 'application/octet-stream',
         },
-        body: ciphertext,
+        body: ciphertext.buffer.slice(
+          ciphertext.byteOffset,
+          ciphertext.byteOffset + ciphertext.byteLength,
+        ) as ArrayBuffer,
       },
     );
   }

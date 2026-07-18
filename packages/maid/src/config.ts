@@ -27,8 +27,10 @@ export function loadConfig(): MaidConfig {
   }
 
   return {
-    host: process.env.HOST ?? '0.0.0.0',
-    port: positiveInteger('PORT', 8788),
+    host: process.env.MAID_BIND_HOST ?? process.env.HOST ?? '0.0.0.0',
+    port: process.env.MAID_PORT
+      ? positiveInteger('MAID_PORT', 8788)
+      : positiveInteger('PORT', 8788),
     dataDir: process.env.MAID_DATA_DIR ?? './data/maid',
     accessToken,
     corsOrigins: (process.env.CORS_ORIGINS ?? '')
