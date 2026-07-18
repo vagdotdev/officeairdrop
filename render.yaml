@@ -1,0 +1,18 @@
+# Optional Render blueprint (free web service) if you prefer Render over Fly/Railway.
+services:
+  - type: web
+    name: officeairdrop-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 8787
+      - key: REDIS_URL
+        value: memory
+      - key: CORS_ORIGINS
+        value: https://officeairdrop.vercel.app,http://localhost:5173
