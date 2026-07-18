@@ -183,4 +183,86 @@ describe('transfer protocol (end-to-end, in-memory)', () => {
     // Chunk 0 already persisted in IndexedDB ⇒ only 1 and 2 are requested.
     expect(req2.missingChunks).toEqual([1, 2]);
   });
+
+  /**
+   * "Maid" / shipping-container warehouse:
+   *   1. Owner parks files on a temporary holding peer (maid).
+   *   2. Maid keeps the completed payload (no UI download required).
+   *   3. Maid becomes sender and returns the same bytes to the owner.
+   *
+   * This is the protocol-level proof that a live buffer peer can act as
+   * temporary storage — not WebRTC's tiny SCTP buffers, but a peer that
+   * receives, holds, then re-sends.
+   */
+  it('parks on a maid peer and round-trips the files back to the owner', async () => {
+    const original = makeFile('parked.bin', 5 * 1024 * 1024, 11); // 2 chunks
+    const want = await fileBytes(original);
+
+    // ── Leg 1: owner → maid ──
+    const outboundKey = await generateSessionKey();
+    const outboundNonce = generateBaseNonce();
+    const ownerSender = new FileSender([original], outboundKey, outboundNonce);
+    await ownerSender.prepare();
+
+    let parked: CompletedFile[] | null = null;
+    let parkError: string | undefined;
+    await new Promise<void>((resolve) => {
+      const maid = new FileReceiver(outboundKey, {
+        onComplete: (files) => {
+          parked = files;
+          resolve();
+        },
+        onError: (m) => {
+          parkError = m;
+          resolve();
+        },
+      });
+      const [tOwner, tMaid] = makePair();
+      maid.attach(tMaid);
+      void ownerSender.run(tOwner);
+    });
+
+    expect(parkError).toBeUndefined();
+    expect(parked).not.toBeNull();
+    expect(parked!).toHaveLength(1);
+
+    // Maid holds the payload as real File objects (the "container").
+    const held: File[] = [];
+    for (const f of parked!) {
+      const bytes = await f.getBytes();
+      held.push(new File([bytes], f.name, { type: f.type }));
+    }
+
+    // ── Leg 2: maid → owner (return shipment) ──
+    const returnKey = await generateSessionKey();
+    const returnNonce = generateBaseNonce();
+    const maidSender = new FileSender(held, returnKey, returnNonce);
+    await maidSender.prepare();
+
+    let returned: CompletedFile[] | null = null;
+    let returnError: string | undefined;
+    await new Promise<void>((resolve) => {
+      const ownerReceiver = new FileReceiver(returnKey, {
+        onComplete: (files) => {
+          returned = files;
+          resolve();
+        },
+        onError: (m) => {
+          returnError = m;
+          resolve();
+        },
+      });
+      const [tMaidOut, tOwnerIn] = makePair();
+      ownerReceiver.attach(tOwnerIn);
+      void maidSender.run(tMaidOut);
+    });
+
+    expect(returnError).toBeUndefined();
+    expect(returned).not.toBeNull();
+    const got = await returned![0]!.getBytes();
+    expect(got.length).toBe(want.length);
+    expect(got[0]).toBe(want[0]);
+    expect(got[got.length - 1]).toBe(want[want.length - 1]);
+    expect(got[4 * 1024 * 1024]).toBe(want[4 * 1024 * 1024]);
+  });
 });
