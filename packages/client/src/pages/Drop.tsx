@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  ClipboardText,
   DownloadSimple,
   LinkSimple,
   MagnifyingGlass,
@@ -27,6 +28,7 @@ import { loadDisplayName, saveDisplayName } from '@/lib/device';
 import { accentGradient, initials } from '@/lib/accents';
 import { formatBytes } from '@/lib/utils';
 import { packFilesForSend } from '@/lib/packFiles';
+import { filesFromClipboard } from '@/lib/clipboardFiles';
 import type { CompletedFile, TransferProgress } from '@/lib/transfer';
 
 type Phase =
@@ -47,6 +49,8 @@ export function DropPage() {
   const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState<CompletedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [clipboardNote, setClipboardNote] = useState<string | null>(null);
+  const [clipboardBusy, setClipboardBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const senderRef = useRef<SenderSession | null>(null);
   const receiverRef = useRef<ReceiverSession | null>(null);
@@ -75,7 +79,23 @@ export function DropPage() {
 
   const addFiles = (incoming: File[]) => {
     if (incoming.length === 0) return;
+    setClipboardNote(null);
     setFiles((prev) => [...prev, ...incoming]);
+  };
+
+  const shareClipboard = async () => {
+    setClipboardBusy(true);
+    setError(null);
+    try {
+      const clipboardFiles = await filesFromClipboard();
+      setFiles(clipboardFiles);
+      setClipboardNote("I've copied your clipboard — tap someone to send.");
+    } catch (e) {
+      setClipboardNote(null);
+      setError((e as Error).message);
+    } finally {
+      setClipboardBusy(false);
+    }
   };
 
   const startSend = async (peer: LobbyPeer) => {
@@ -214,6 +234,7 @@ export function DropPage() {
               onClick={() => {
                 resetTransfer();
                 setFiles([]);
+                setClipboardNote(null);
                 lobby.leave();
                 setPhase('gate');
               }}
@@ -286,14 +307,39 @@ export function DropPage() {
                       dragOver ? 'ring-4 ring-[#007aff]/20' : ''
                     }`}
                   >
+                    <div className="mb-4 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center rounded-full bg-[#12131a] px-3 py-1 text-xs font-semibold text-white">
+                        Files
+                      </span>
+                      <button
+                        type="button"
+                        disabled={clipboardBusy}
+                        onClick={() => void shareClipboard()}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-[var(--color-ink)] transition hover:bg-white disabled:opacity-60"
+                      >
+                        <ClipboardText weight="bold" className="h-3.5 w-3.5" />
+                        {clipboardBusy ? 'Reading…' : 'Share Clipboard'}
+                      </button>
+                    </div>
+
+                    {clipboardNote && (
+                      <div className="mb-4 rounded-2xl bg-[#007aff]/10 px-3.5 py-2.5 text-sm font-medium text-[#007aff]">
+                        {clipboardNote}
+                      </div>
+                    )}
+
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <div className="font-display text-lg font-semibold tracking-tight">
-                          {files.length === 0 ? 'Add files to send' : `${files.length} ready to drop`}
+                          {files.length === 0
+                            ? 'Add files to send'
+                            : clipboardNote
+                              ? 'Clipboard ready to drop'
+                              : `${files.length} ready to drop`}
                         </div>
                         <div className="mt-1 text-sm text-[var(--color-ink-soft)]">
                           {files.length === 0
-                            ? 'Drag & drop anywhere here, or browse.'
+                            ? 'Share Clipboard, drag & drop, or browse.'
                             : files.length > 1
                               ? `${formatBytes(totalBytes)} · will send as one “Files by …” folder`
                               : formatBytes(totalBytes)}
@@ -333,7 +379,13 @@ export function DropPage() {
                               </span>
                               <button
                                 type="button"
-                                onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                                onClick={() => {
+                                  setFiles((prev) => {
+                                    const next = prev.filter((_, idx) => idx !== i);
+                                    if (next.length === 0) setClipboardNote(null);
+                                    return next;
+                                  });
+                                }}
                                 className="rounded-full p-1 text-[var(--color-ink-faint)] hover:bg-black/5 hover:text-[var(--color-ink)]"
                               >
                                 <X weight="bold" className="h-3.5 w-3.5" />
@@ -398,7 +450,7 @@ export function DropPage() {
 
                     {files.length === 0 && lobby.peers.length > 0 && (
                       <p className="mt-8 text-center text-sm text-[var(--color-ink-faint)]">
-                        Add files above, then tap a person to send.
+                        Add files or share clipboard above, then tap a person to send.
                       </p>
                     )}
                   </div>
@@ -441,6 +493,7 @@ export function DropPage() {
                         type="button"
                         onClick={() => {
                           setFiles([]);
+                          setClipboardNote(null);
                           resetTransfer();
                         }}
                         className={`mt-6 rounded-full px-6 py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
