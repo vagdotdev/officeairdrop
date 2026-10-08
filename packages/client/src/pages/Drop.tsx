@@ -255,6 +255,11 @@ export function DropPage() {
               <NameGate
                 initialName={loadDisplayName()}
                 busy={lobby.status === 'connecting'}
+                error={
+                  lobby.status === 'error' || lobby.status === 'reconnecting'
+                    ? 'Can’t reach the Drop server. Retrying…'
+                    : null
+                }
                 onJoin={onJoin}
               />
             </div>

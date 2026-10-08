@@ -5,10 +5,11 @@ import { ArrowRight, Sparkle } from '@phosphor-icons/react';
 interface NameGateProps {
   initialName?: string;
   busy?: boolean;
+  error?: string | null;
   onJoin: (name: string) => void;
 }
 
-export function NameGate({ initialName = '', busy, onJoin }: NameGateProps) {
+export function NameGate({ initialName = '', busy, error, onJoin }: NameGateProps) {
   const [name, setName] = useState(initialName);
 
   return (
@@ -64,6 +65,12 @@ export function NameGate({ initialName = '', busy, onJoin }: NameGateProps) {
             </span>
           </button>
         </form>
+
+        {error && (
+          <div className="mt-4 rounded-2xl bg-[#ff3b30]/10 px-4 py-3 text-center text-sm font-medium text-[#c41e17]">
+            {error}
+          </div>
+        )}
       </div>
     </motion.div>
   );

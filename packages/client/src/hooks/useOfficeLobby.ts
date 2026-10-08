@@ -63,6 +63,7 @@ export function useOfficeLobby(): UseOfficeLobby {
         setSelf(me);
         setPeers(list);
         setStatus('online');
+        setError(null);
       });
       client.on('peer-online', ({ peer }) => {
         setPeers((prev) => {
