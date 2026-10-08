@@ -1,8 +1,8 @@
 /**
- * Persistent office lobby connection — presence + incoming offers.
+ * Persistent office lobby connection — presence, incoming offers, and chat.
  */
 import { useCallback, useEffect, useState } from 'react';
-import type { IncomingTransferOfferMessage, LobbyPeer } from '@beam/shared';
+import type { IncomingChatMessage, IncomingTransferOfferMessage, LobbyPeer } from '@beam/shared';
 import { SignalingClient } from '@/lib/signaling/signalingClient';
 import { SIGNALING_URL } from '@/config/env';
 import { guessDeviceLabel } from '@/lib/device';
@@ -14,12 +14,14 @@ export interface UseOfficeLobby {
   self: LobbyPeer | null;
   peers: LobbyPeer[];
   incoming: IncomingTransferOfferMessage | null;
+  messages: IncomingChatMessage[];
   error: string | null;
   signaling: SignalingClient | null;
   join: (displayName: string) => void;
   leave: () => void;
   clearIncoming: () => void;
   respondToOffer: (accept: boolean) => void;
+  sendChat: (text: string) => void;
 }
 
 export function useOfficeLobby(): UseOfficeLobby {
@@ -28,6 +30,7 @@ export function useOfficeLobby(): UseOfficeLobby {
   const [self, setSelf] = useState<LobbyPeer | null>(null);
   const [peers, setPeers] = useState<LobbyPeer[]>([]);
   const [incoming, setIncoming] = useState<IncomingTransferOfferMessage | null>(null);
+  const [messages, setMessages] = useState<IncomingChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const leave = useCallback(() => {
@@ -39,6 +42,7 @@ export function useOfficeLobby(): UseOfficeLobby {
     setSelf(null);
     setPeers([]);
     setIncoming(null);
+    setMessages([]);
   }, []);
 
   const join = useCallback(
@@ -58,6 +62,7 @@ export function useOfficeLobby(): UseOfficeLobby {
       setSelf(null);
       setPeers([]);
       setIncoming(null);
+      setMessages([]);
 
       client.on('lobby-welcome', ({ self: me, peers: list }) => {
         setSelf(me);
@@ -83,6 +88,7 @@ export function useOfficeLobby(): UseOfficeLobby {
         setSelf((s) => (s?.peerId === peer.peerId ? peer : s));
       });
       client.on('transfer-offer', (offer) => setIncoming(offer));
+      client.on('chat-message', (msg) => setMessages((prev) => [...prev, msg]));
       client.on('reconnecting', () => setStatus('reconnecting'));
       client.on('error', ({ message }) => setError(message));
 
@@ -106,6 +112,15 @@ export function useOfficeLobby(): UseOfficeLobby {
     [incoming, signaling],
   );
 
+  const sendChat = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || !signaling) return;
+      signaling.sendChat(trimmed);
+    },
+    [signaling],
+  );
+
   useEffect(() => () => {
     signaling?.close();
   }, [signaling]);
@@ -115,11 +130,13 @@ export function useOfficeLobby(): UseOfficeLobby {
     self,
     peers,
     incoming,
+    messages,
     error,
     signaling,
     join,
     leave,
     clearIncoming,
     respondToOffer,
+    sendChat,
   };
 }

@@ -6,6 +6,7 @@
  */
 import type {
   ClientToServerMessage,
+  IncomingChatMessage,
   IncomingTransferOfferMessage,
   LobbyPeer,
   OfferFileMeta,
@@ -32,6 +33,7 @@ type SignalingEvents = {
     fromPeerId: string;
     accept: boolean;
   };
+  'chat-message': IncomingChatMessage;
   error: { code: string; message: string };
 };
 
@@ -166,6 +168,9 @@ export class SignalingClient {
           accept: msg.accept,
         });
         break;
+      case 'chat-message':
+        this.emitter.emit('chat-message', msg);
+        break;
       case 'error':
         if (this.pendingJoin) {
           this.pendingJoin.reject(new Error(msg.message));
@@ -235,6 +240,10 @@ export class SignalingClient {
 
   respondToOffer(offerId: string, toPeerId: string, accept: boolean): void {
     this.send({ type: 'transfer-response', offerId, toPeerId, accept });
+  }
+
+  sendChat(text: string): void {
+    this.send({ type: 'chat-message', text });
   }
 
   /** Close permanently. Pass `{ keepLobby: true }` is unused — always full close. */

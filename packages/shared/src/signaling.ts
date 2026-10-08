@@ -6,6 +6,7 @@
  *   • office lobby presence (who's online)
  *   • transfer offers (tap a person → accept/decline)
  *   • ephemeral 1:1 rooms + opaque SDP/ICE relay
+ *   • lobby chat (relayed live, never stored)
  *
  * It never sees file bytes. For person-to-person drops, the session key rides
  * in the offer so the receiver can decrypt without a share link. Link-based
@@ -88,6 +89,12 @@ export interface TransferResponseMessage {
   accept: boolean;
 }
 
+/** Say something to everyone in the office lobby. */
+export interface ChatMessage {
+  type: 'chat-message';
+  text: string;
+}
+
 export type ClientToServerMessage =
   | LobbyJoinMessage
   | LobbyUpdateMessage
@@ -95,7 +102,8 @@ export type ClientToServerMessage =
   | JoinRoomMessage
   | SignalMessage
   | TransferOfferMessage
-  | TransferResponseMessage;
+  | TransferResponseMessage
+  | ChatMessage;
 
 // ── Server → Client ───────────────────────────────────────────
 
@@ -164,6 +172,12 @@ export interface TransferResponseResultMessage {
   accept: boolean;
 }
 
+export interface IncomingChatMessage {
+  type: 'chat-message';
+  from: LobbyPeer;
+  text: string;
+}
+
 export interface ErrorMessage {
   type: 'error';
   code: SignalingErrorCode;
@@ -182,6 +196,7 @@ export type ServerToClientMessage =
   | RelayedSignalMessage
   | IncomingTransferOfferMessage
   | TransferResponseResultMessage
+  | IncomingChatMessage
   | ErrorMessage;
 
 // ── Shared payloads ───────────────────────────────────────────

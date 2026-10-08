@@ -6,6 +6,7 @@
  *   • mint/join 1:1 transfer rooms
  *   • route transfer offers/responses peer-to-peer
  *   • relay opaque SDP/ICE payloads within a room
+ *   • fan out lobby chat messages (never stored)
  *
  * Never touches file bytes. Horizontal scale via Redis pub/sub.
  */
@@ -57,6 +58,7 @@ const RATE_MAX_MESSAGES = 300;
 const MAX_NAME = 40;
 const MAX_DEVICE = 60;
 const MAX_OFFER_FILES = 50;
+const MAX_CHAT = 500;
 
 function clampText(value: unknown, max: number, fallback: string): string {
   if (typeof value !== 'string') return fallback;
@@ -165,6 +167,8 @@ export class SignalingHub {
             msg.toPeerId,
             msg.accept,
           );
+        case 'chat-message':
+          return await this.onChatMessage(peer, msg.text);
         default:
           return this.sendError(peer, 'invalid-message', 'Unknown message type.');
       }
@@ -380,6 +384,17 @@ export class SignalingHub {
       offerId,
       fromPeerId: peer.peerId,
       accept: Boolean(accept),
+    });
+  }
+
+  private async onChatMessage(peer: PeerConnection, text: string): Promise<void> {
+    if (!peer.inLobby || !peer.profile) {
+      return this.sendError(peer, 'not-in-lobby', 'Join the lobby first.');
+    }
+    const clean = clampText(text, MAX_CHAT, '');
+    if (!clean) return;
+    await this.broadcastLobby({
+      message: { type: 'chat-message', from: peer.profile, text: clean },
     });
   }
 

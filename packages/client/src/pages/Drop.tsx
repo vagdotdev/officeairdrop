@@ -20,6 +20,7 @@ import { IncomingOffer } from '@/components/drop/IncomingOffer';
 import { DropProgress } from '@/components/drop/DropProgress';
 import { SaveFileButton } from '@/components/drop/SaveFileButton';
 import { LobbyAtmosphere } from '@/components/drop/LobbyAtmosphere';
+import { ChatPanel } from '@/components/drop/ChatPanel';
 import { useOfficeLobby } from '@/hooks/useOfficeLobby';
 import { SenderSession } from '@/lib/session/senderSession';
 import { ReceiverSession } from '@/lib/session/receiverSession';
@@ -197,7 +198,7 @@ export function DropPage() {
   const busyTransfer = phase === 'sending' || phase === 'receiving';
 
   return (
-    <div className="relative min-h-[100dvh]">
+    <div className={`relative min-h-[100dvh] ${phase !== 'gate' ? 'lg:pr-[22rem]' : ''}`}>
       <div className="aurora" aria-hidden />
       <div className="noise" aria-hidden />
 
@@ -579,6 +580,15 @@ export function DropPage() {
           </>
         )}
       </main>
+
+      {phase !== 'gate' && (
+        <ChatPanel
+          messages={lobby.messages}
+          selfPeerId={lobby.self?.peerId}
+          disabled={lobby.status !== 'online'}
+          onSend={lobby.sendChat}
+        />
+      )}
 
       <IncomingOffer
         offer={phase === 'receiving' ? null : lobby.incoming}

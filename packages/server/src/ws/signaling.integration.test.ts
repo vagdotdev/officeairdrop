@@ -93,4 +93,50 @@ describe('signaling handshake (integration)', () => {
 
     sender.close();
   });
+
+  it('broadcasts lobby chat to everyone who joined with a name', async () => {
+    const redis = new RedisMock() as unknown as Redis;
+    built = await buildApp({ redis });
+    await built.app.listen({ port: 0, host: '127.0.0.1' });
+    const { port } = built.app.server.address() as AddressInfo;
+    const url = `ws://127.0.0.1:${port}/ws`;
+
+    const alice = new WebSocket(url);
+    await open(alice);
+    const aliceWelcome = nextMessage(alice);
+    alice.send(JSON.stringify({ type: 'lobby-join', displayName: 'Alice', deviceLabel: 'Mac' }));
+    expect((await aliceWelcome).type).toBe('lobby-welcome');
+
+    const bob = new WebSocket(url);
+    await open(bob);
+    const bobWelcome = nextMessage(bob);
+    const aliceSeesBob = nextMessage(alice);
+    bob.send(JSON.stringify({ type: 'lobby-join', displayName: 'Bob', deviceLabel: 'Linux' }));
+    expect((await bobWelcome).type).toBe('lobby-welcome');
+    expect((await aliceSeesBob).type).toBe('peer-online');
+
+    // Both people (sender included) get the message.
+    const aliceGets = nextMessage(alice);
+    const bobGets = nextMessage(bob);
+    bob.send(JSON.stringify({ type: 'chat-message', text: '  hello   office  ' }));
+    for (const msg of [await aliceGets, await bobGets]) {
+      expect(msg.type).toBe('chat-message');
+      if (msg.type !== 'chat-message') continue;
+      expect(msg.text).toBe('hello office');
+      expect(msg.from.displayName).toBe('Bob');
+    }
+
+    // No name, no chat.
+    const lurker = new WebSocket(url);
+    await open(lurker);
+    const rejected = nextMessage(lurker);
+    lurker.send(JSON.stringify({ type: 'chat-message', text: 'hi' }));
+    const err = await rejected;
+    expect(err.type).toBe('error');
+    if (err.type === 'error') expect(err.code).toBe('not-in-lobby');
+
+    alice.close();
+    bob.close();
+    lurker.close();
+  });
 });
